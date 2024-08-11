@@ -84,14 +84,7 @@ keepAlive();
 
 client.color = config.color;
 
-// Cargar comandos desde la carpeta
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.name, command);
-}
 
-const prefix = 'anya';
 
 client.on(Events.MessageCreate, async message => {
   console.log("Message received:", message.content); // Log de depuración
@@ -127,24 +120,9 @@ client.on(Events.MessageCreate, async message => {
     }
   }
 
-  // Comando handling
-  if (!message.content.startsWith(prefix)) return;
-
-  const args = message.content.slice(prefix.length).trim().split(/ +/);
-  const commandName = args.shift().toLowerCase();
-
-  console.log(`Command detected: ${commandName}`); // Log de depuración
-
-  const command = client.commands.get(commandName);
-  if (!command) return;
-
-  try {
-    await command.execute(message, args);
-  } catch (error) {
-    console.error(error);
-    await message.reply('Hubo un error ejecutando ese comando.');
-  }
+ 
 });
+
 
 // Bienvenida y reglas (unchanged)
 client.on('guildMemberAdd', async member => {
@@ -202,37 +180,7 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Configurar el servidor web
-const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
+client.login(process.env.token);
 
-app.post('/create-embed', async (req, res) => {
-  const { title, description, color, footer, channelId } = req.body;
-  const embed = new EmbedBuilder()
-    .setTitle(title)
-    .setDescription(description)
-    .setColor(color)
-    .setFooter({ text: footer });
-
-  try {
-    const channel = await client.channels.fetch(channelId);
-    await channel.send({ embeds: [embed] });
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.json({ success: false, error: error.message });
-  }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor web corriendo en el puerto ${PORT}`);
-});
-
-client.login(process.env.DISCORD_TOKEN);
 
